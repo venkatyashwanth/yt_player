@@ -11,7 +11,9 @@ export default function Player({
   onPlayingChange,
   onPrev,
   onNext,
-  onEnded
+  onEnded,
+  isNextDisabled,
+  isPrevDisabled,
 }) {
   const playerRef = useRef(null);
   const playlistRef = useRef([]);
@@ -104,8 +106,8 @@ export default function Player({
       <div className={styles.videoCtrls}>
         <div className={styles.currentTitle}>Now Playing..</div>
         <div className={styles.navBtns}>
-          <button className="btn" onClick={onPrev}>Prev</button>
-          <button className="btn" onClick={onNext}>Next</button>
+          <button className="btn" onClick={onPrev} disabled={isPrevDisabled}>Prev</button>
+          <button className="btn" onClick={onNext} disabled={isNextDisabled}>Next</button>
         </div>
       </div>
     </div>

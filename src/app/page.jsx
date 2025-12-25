@@ -10,6 +10,10 @@ export default function Home() {
   const [currentIndex, setCurrentIndex] = useState(-1);
   const [isPlaying, setIsPlaying] = useState(false);
   const [toggleSignal, setToggleSignal] = useState(0);
+  const playlistLength = loadPlaylist().length;
+  const isNextDisabled = currentIndex >= playlistLength - 1 || playlistLength === 0;
+  const isPrevDisabled = currentIndex <= 0;
+
 
   function handleTogglePlay(index) {
     console.log(index);
@@ -30,6 +34,7 @@ export default function Home() {
       return i < list.length - 1 ? i + 1 : i;
     });
   }
+
   return (
     <>
       <Header />
@@ -41,6 +46,8 @@ export default function Home() {
           onPrev={handlePrev}
           onNext={handleNext}
           onEnded={handleNext}
+          isNextDisabled={isNextDisabled}
+          isPrevDisabled={isPrevDisabled}
         />
         <Playlist
           currentIndex={currentIndex}
