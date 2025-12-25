@@ -40,6 +40,7 @@ export default function Home() {
           onPlayingChange={setIsPlaying}
           onPrev={handlePrev}
           onNext={handleNext}
+          onEnded={handleNext}
         />
         <Playlist
           currentIndex={currentIndex}

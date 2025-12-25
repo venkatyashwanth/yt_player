@@ -11,6 +11,7 @@ export default function Player({
   onPlayingChange,
   onPrev,
   onNext,
+  onEnded
 }) {
   const playerRef = useRef(null);
   const playlistRef = useRef([]);
@@ -18,19 +19,20 @@ export default function Player({
 
   const handleStateChange = useCallback(
     (event) => {
-      console.log("how many times")
       if (event.data === window.YT.PlayerState.PLAYING) {
         onPlayingChange(true);
       }
 
-      if (
-        event.data === window.YT.PlayerState.PAUSED ||
-        event.data === window.YT.PlayerState.ENDED
-      ) {
+      if (event.data === window.YT.PlayerState.PAUSED) {
         onPlayingChange(false);
       }
+
+      if (event.data === window.YT.PlayerState.ENDED) {
+        onPlayingChange(false);
+        onEnded?.(); // 🔥 auto-play next
+      }
     },
-    []
+    [onPlayingChange, onEnded]
   );
 
   // Create player once
