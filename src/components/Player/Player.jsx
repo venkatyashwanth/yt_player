@@ -18,18 +18,22 @@ export default function Player({
   const playerRef = useRef(null);
   const playlistRef = useRef([]);
   const isPlayerReadyRef = useRef(false);
+  const isPlayingRef = useRef(false);
 
   const handleStateChange = useCallback(
     (event) => {
       if (event.data === window.YT.PlayerState.PLAYING) {
+        isPlayingRef.current = true;
         onPlayingChange(true);
       }
 
       if (event.data === window.YT.PlayerState.PAUSED) {
+        isPlayingRef.current = false;
         onPlayingChange(false);
       }
 
       if (event.data === window.YT.PlayerState.ENDED) {
+        isPlayingRef.current = false;
         onPlayingChange(false);
         onEnded?.(); // 🔥 auto-play next
       }
@@ -83,17 +87,12 @@ export default function Player({
   // Toggle play / pause
   useEffect(() => {
     if (!playerRef.current) return;
-
-    const state = playerRef.current.getPlayerState?.();
-
-    // If currently playing → pause
-    if (state === window.YT.PlayerState.PLAYING) {
-      playerRef.current.pauseVideo();
-      return;
+    if (isPlayingRef.current) {
+      playerRef.current.pauseVideo?.();
+    }else{
+      playerRef.current.playVideo?.();
     }
-
-    // Otherwise → force play
-    playerRef.current.playVideo();
+    
   }, [toggleSignal]);
 
 

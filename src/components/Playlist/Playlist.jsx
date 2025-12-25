@@ -73,8 +73,14 @@ export default function Playlist({
                 onClick={(e) => {
                   e.stopPropagation();
                   onTogglePlay(i);
+                  // console.log(isPlaying)
                 }}
               >
+                {/* {i === currentIndex && isPlaying ? (
+                  <PauseIcon />
+                ) : (
+                  <PlayIcon />
+                )} */}
                 {i === currentIndex && isPlaying ? (
                   <PauseIcon />
                 ) : (

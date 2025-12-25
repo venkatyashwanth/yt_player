@@ -16,7 +16,6 @@ export default function Home() {
     setPlaylistLength(loadPlaylist().length);
   }, []);
 
-  // const playlistLength = loadPlaylist().length;
   const isNextDisabled = playlistLength === 0 || currentIndex >= playlistLength - 1;
   const isPrevDisabled = playlistLength === 0 || currentIndex <= 0;
 
@@ -27,7 +26,6 @@ export default function Home() {
   }, [currentIndex]);
 
   function handleTogglePlay(index) {
-    console.log(index);
     if (index === currentIndex) {
       setToggleSignal((n) => n + 1);
     } else {
