@@ -3,6 +3,7 @@
 import Header from "@/components/Header";
 import Player from "@/components/Player";
 import Playlist from "@/components/Playlist";
+import { loadPlaylist } from "@/utils/storage";
 import { useEffect, useState } from "react";
 
 export default function Home() {
@@ -19,6 +20,16 @@ export default function Home() {
     }
   }
 
+  function handlePrev() {
+    setCurrentIndex((i) => (i > 0 ? i - 1 : i));
+  }
+
+  function handleNext() {
+    setCurrentIndex((i) => {
+      const list = loadPlaylist();
+      return i < list.length - 1 ? i + 1 : i;
+    });
+  }
   return (
     <>
       <Header />
@@ -27,6 +38,8 @@ export default function Home() {
           currentIndex={currentIndex}
           toggleSignal={toggleSignal}
           onPlayingChange={setIsPlaying}
+          onPrev={handlePrev}
+          onNext={handleNext}
         />
         <Playlist
           currentIndex={currentIndex}
