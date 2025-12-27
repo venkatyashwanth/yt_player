@@ -10,6 +10,7 @@ export default function Home() {
   const [currentIndex, setCurrentIndex] = useState(() => loadIndex());
   const [isPlaying, setIsPlaying] = useState(false);
   const [toggleSignal, setToggleSignal] = useState(0);
+  const [volumeToast, setVolumeToast] = useState(null);
   const playerControlsRef = useRef(null);
   const playlistLength = loadPlaylist().length;
   const isNextDisabled = playlistLength === 0 || currentIndex >= playlistLength - 1;
@@ -67,6 +68,18 @@ export default function Home() {
             handlePrev();
           }
           break;
+        case "ArrowUp": {
+          e.preventDefault(); // avoid page scroll
+          const v = controls?.changeVolume(5);
+          if (typeof v === "number") setVolumeToast(v);
+          break;
+        }
+        case "ArrowDown": {
+          e.preventDefault();
+          const v = controls?.changeVolume(-5);
+          if (typeof v === "number") setVolumeToast(v);
+          break;
+        }
         case "KeyM":
           console.log("sdf")
           console.log(controls);
@@ -89,6 +102,13 @@ export default function Home() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [handleNext, handlePrev])
 
+  // Volume Toast
+  useEffect(() => {
+    if (volumeToast == null) return;
+    const t = setTimeout(() => setVolumeToast(null), 1000);
+    return () => clearTimeout(t);
+  }, [volumeToast])
+  // Test Change
   return (
     <>
       <Header />
@@ -110,6 +130,11 @@ export default function Home() {
           onTogglePlay={handleTogglePlay}
         />
       </div>
+      {volumeToast !== null && (
+        <div className="volume-toast">
+          Volume: {volumeToast}%
+        </div>
+      )}
     </>
   );
 }

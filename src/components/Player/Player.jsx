@@ -36,6 +36,17 @@ const Player = forwardRef(function Player({
         : playerRef.current.mute();
     },
 
+    changeVolume(delta) {
+      if (!playerRef.current) return;
+
+      const current = playerRef.current.getVolume?.();
+      if (typeof current !== "number") return;
+
+      const next = Math.min(100, Math.max(0, current + delta));
+      playerRef.current.setVolume(next);
+      return next;
+    },
+
     enterFullscreen() {
       const iframe = document.getElementById("player");
       iframe?.requestFullscreen?.();

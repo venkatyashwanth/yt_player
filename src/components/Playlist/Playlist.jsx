@@ -109,6 +109,12 @@ export default function Playlist({
           value={url}
           onChange={(e) => setUrl(e.target.value)}
           placeholder="Paste Youtube URL or ID"
+          onKeyDown={(e) => {
+            if(e.key === "Enter"){
+              e.preventDefault();
+              addVideo();
+            }
+          }}
         />
         <button className="btn" onClick={addVideo} disabled={isAdding}>
           {isAdding ? "Adding..." : "Add"}
