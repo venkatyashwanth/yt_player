@@ -3,7 +3,7 @@
 import { useEffect, useRef, useCallback, forwardRef, useImperativeHandle } from "react";
 import styles from "./Player.module.scss";
 import { loadYouTubeAPI } from "@/utils/youtube";
-import { loadPlaylist } from "@/utils/storage";
+import { loadPlaylist, loadVolume, saveVolume } from "@/utils/storage";
 
 const Player = forwardRef(function Player({
   currentIndex,
@@ -32,10 +32,20 @@ const Player = forwardRef(function Player({
 
     toggleMute() {
       if (!playerRef.current) return;
-      playerRef.current.isMuted()
-        ? playerRef.current.unMute()
-        : playerRef.current.mute();
-    },
+
+      if (playerRef.current.isMuted()) {
+        playerRef.current.unMute();
+
+        const v = loadVolume();
+        if (typeof v === "number") {
+          playerRef.current.setVolume(v);
+        }
+      } else {
+        saveVolume(playerRef.current.getVolume());
+        playerRef.current.mute();
+      }
+    }
+    ,
 
     changeVolume(delta) {
       if (!playerRef.current) return;
@@ -45,6 +55,7 @@ const Player = forwardRef(function Player({
 
       const next = Math.min(100, Math.max(0, current + delta));
       playerRef.current.setVolume(next);
+      saveVolume(next);
       return next;
     },
 
@@ -93,6 +104,13 @@ const Player = forwardRef(function Player({
           onReady: (event) => {
             playerRef.current = event.target;
             isPlayerReadyRef.current = true;
+
+            const savedVolume = loadVolume();
+            if (typeof savedVolume === "number") {
+              playerRef.current.setVolume(savedVolume);
+              saveVolume(next);
+            }
+
             // play if index already exists
             if (currentIndex >= 0) {
               playlistRef.current = loadPlaylist();
