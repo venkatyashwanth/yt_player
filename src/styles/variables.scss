@@ -9,6 +9,7 @@
     /* common */
     --accent1: #ff416c;
     --accent2: #ff4b2b;
+    --scrollbar-color: rgba(255, 255, 255, 0.35);
 }
 
 [data-theme="light"] {
@@ -19,4 +20,5 @@
     --primary-clr: #556b2f;
     --input-border: #ffdab9;
     --icn-clr: #d2691e;
+    --scrollbar-color: rgba(0, 0, 0, 0.25);
 }

@@ -22,6 +22,8 @@
         max-height: 420px;
         overflow: auto;
         margin-top: 10px;
+        scrollbar-width: thin;
+        scrollbar-color: var(--scrollbar-color) transparent;
 
         .playlistItem {
             display: flex;
