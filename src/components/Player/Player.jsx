@@ -142,11 +142,6 @@ const Player = forwardRef(function Player({
     const video = playlistRef.current[currentIndex];
     if (!video) return;
     if (typeof playerRef.current.loadVideoById !== "function") return;
-    // playerRef.current.loadVideoById(video.id);
-    // const savedTime = loadVideoTime(video.id);
-    // if (savedTime > 0) {
-    //   playerRef.current.seekTo(savedTime, true);
-    // }
     const savedTime = loadVideoTime(video.id);
     pendingSeekRef.current = savedTime > 0 ? savedTime : null;
     playerRef.current.loadVideoById({
