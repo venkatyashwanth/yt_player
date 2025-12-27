@@ -12,6 +12,7 @@ export default function Playlist({
   currentIndex,
   isPlaying,
   onTogglePlay,
+  onDelete
 }) {
   const [list, setList] = useState([]);
   const [url, setUrl] = useState("");
@@ -42,6 +43,76 @@ export default function Playlist({
     setUrl("");
     setIsAdding(false);
   }
+
+  function handleDelete(index) {
+    if (!confirm("Delete this video?")) return;
+
+    const updated = [...list];
+    updated.splice(index, 1);
+
+    setList(updated);
+    localStorage.setItem("yt_master", JSON.stringify(updated));
+
+    onDelete?.(index, updated.length);
+  }
+
+  function exportPlaylist() {
+    const data = loadPlaylist();
+    if (!data.length) {
+      alert("Playlist is empty");
+      return;
+    }
+
+    const blob = new Blob([JSON.stringify(data, null, 2)], {
+      type: "application/json",
+    });
+
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "yt-playlist.json";
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  function importPlaylist(file) {
+    const reader = new FileReader();
+
+    reader.onload = (e) => {
+      try {
+        const parsed = JSON.parse(e.target.result);
+
+        if (!Array.isArray(parsed)) {
+          throw new Error("Invalid playlist format");
+        }
+
+        // Normalize structure
+        const cleaned = parsed.map((item) => ({
+          id: String(item.id),
+          title: String(item.title || item.id),
+        }));
+
+        localStorage.setItem("yt_master", JSON.stringify(cleaned));
+        setList(cleaned);
+
+        alert("Playlist imported successfully");
+      } catch {
+        alert("Invalid JSON file");
+      }
+    };
+
+    reader.readAsText(file);
+  }
+
+  function clearPlaylist() {
+    if (!confirm("Clear entire playlist?")) return;
+
+    localStorage.removeItem("yt_master");
+    setList([]);
+  }
+
+
+
 
   return (
     <div className={styles.playlistArea}>
@@ -87,7 +158,12 @@ export default function Playlist({
                 <CopyIcon />
               </button>
 
-              <button className={styles.iconBtn}>
+              <button className={styles.iconBtn}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleDelete(i);
+                }}
+              >
                 <DeleteIcon />
               </button>
             </div>
@@ -113,10 +189,17 @@ export default function Playlist({
         </button>
       </div>
       <div className={styles.footerActions}>
-        <button className="btn">Export JSON</button>
-        <button className="btn">Import JSON</button>
-        <input type="file" id="importfile" accept=".json" className={styles.fileInput} />
-        <button className="btn" style={{background: "#666"}}>Clear</button>
+        <button className="btn" onClick={exportPlaylist}>Export JSON</button>
+        <button className="btn" onClick={() => document.getElementById("importfile").click()}>Import JSON</button>
+        <input type="file" id="importfile" accept=".json" className={styles.fileInput}
+          onChange={(e) => {
+            if (e.target.files?.[0]) {
+              importPlaylist(e.target.files[0]);
+              e.target.value = ""; // allow re-import same file
+            }
+          }}
+        />
+        <button className="btn" style={{ background: "#666" }} onClick={clearPlaylist}>Clear</button>
       </div>
     </div>
   );
