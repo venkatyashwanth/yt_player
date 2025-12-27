@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useRef, useCallback, forwardRef, useImperativeHandle } from "react";
+import { useEffect, useRef, useCallback, forwardRef, useImperativeHandle, useState } from "react";
 import styles from "./Player.module.scss";
 import { loadYouTubeAPI } from "@/utils/youtube";
-import { loadPlaylist, loadVolume, saveVolume } from "@/utils/storage";
+import { loadPlaylist, loadVolume, saveVolume, loadVideoTime, saveVideoTime } from "@/utils/storage";
 
 const Player = forwardRef(function Player({
   currentIndex,
+  currentTitle,
   toggleSignal,
   onPlayingChange,
   onPrev,
@@ -15,11 +16,13 @@ const Player = forwardRef(function Player({
   isNextDisabled,
   isPrevDisabled,
 }, ref) {
+  const [playerReady, setPlayerReady] = useState(false);
   const playerRef = useRef(null);
   const playlistRef = useRef([]);
   const isPlayerReadyRef = useRef(false);
   const isPlayingRef = useRef(false);
   const videoBoxRef = useRef(null);
+  const pendingSeekRef = useRef(null);
 
   useImperativeHandle(ref, () => ({
     seekBy(seconds) {
@@ -44,8 +47,7 @@ const Player = forwardRef(function Player({
         saveVolume(playerRef.current.getVolume());
         playerRef.current.mute();
       }
-    }
-    ,
+    },
 
     changeVolume(delta) {
       if (!playerRef.current) return;
@@ -69,11 +71,26 @@ const Player = forwardRef(function Player({
         document.exitFullscreen();
       }
     },
+
+    stop() {
+      if (!playerRef.current) return;
+      playerRef.current.stopVideo?.();
+    }
   }));
 
 
   const handleStateChange = useCallback(
     (event) => {
+      if (
+        event.data === window.YT.PlayerState.CUED ||
+        event.data === window.YT.PlayerState.PLAYING
+      ) {
+        if (pendingSeekRef.current != null) {
+          playerRef.current.seekTo(pendingSeekRef.current, true);
+          pendingSeekRef.current = null;
+        }
+      }
+
       if (event.data === window.YT.PlayerState.PLAYING) {
         isPlayingRef.current = true;
         onPlayingChange(true);
@@ -87,7 +104,7 @@ const Player = forwardRef(function Player({
       if (event.data === window.YT.PlayerState.ENDED) {
         isPlayingRef.current = false;
         onPlayingChange(false);
-        onEnded?.(); // 🔥 auto-play next
+        onEnded?.();
       }
     },
     [onPlayingChange, onEnded]
@@ -104,23 +121,11 @@ const Player = forwardRef(function Player({
           onReady: (event) => {
             playerRef.current = event.target;
             isPlayerReadyRef.current = true;
+            setPlayerReady(true);
 
             const savedVolume = loadVolume();
             if (typeof savedVolume === "number") {
               playerRef.current.setVolume(savedVolume);
-              saveVolume(next);
-            }
-
-            // play if index already exists
-            if (currentIndex >= 0) {
-              playlistRef.current = loadPlaylist();
-              const video = playlistRef.current[currentIndex];
-              if (
-                video &&
-                typeof playerRef.current.loadVideoById === "function"
-              ) {
-                playerRef.current.loadVideoById(video.id);
-              }
             }
           },
           onStateChange: handleStateChange,
@@ -131,17 +136,24 @@ const Player = forwardRef(function Player({
 
   // Play when index changes
   useEffect(() => {
-    if (currentIndex < 0) return;
     if (!isPlayerReadyRef.current) return;
-
+    if (currentIndex < 0) return;
     playlistRef.current = loadPlaylist();
     const video = playlistRef.current[currentIndex];
     if (!video) return;
-
     if (typeof playerRef.current.loadVideoById !== "function") return;
-
-    playerRef.current.loadVideoById(video.id);
-  }, [currentIndex]);
+    // playerRef.current.loadVideoById(video.id);
+    // const savedTime = loadVideoTime(video.id);
+    // if (savedTime > 0) {
+    //   playerRef.current.seekTo(savedTime, true);
+    // }
+    const savedTime = loadVideoTime(video.id);
+    pendingSeekRef.current = savedTime > 0 ? savedTime : null;
+    playerRef.current.loadVideoById({
+      videoId: video.id,
+      startSeconds: savedTime,
+    });
+  }, [playerReady, currentIndex]);
 
   // Toggle play / pause
   useEffect(() => {
@@ -188,10 +200,7 @@ const Player = forwardRef(function Player({
     function onVolumeChange(e) {
       const el = document.querySelector(`.${styles.volumeValue}`);
       if (!el) return;
-
       el.textContent = `${e.detail}%`;
-
-      // subtle pop animation
       el.style.transform = "scale(1.15)";
       requestAnimationFrame(() => {
         el.style.transform = "scale(1)";
@@ -201,6 +210,24 @@ const Player = forwardRef(function Player({
     window.addEventListener("yt-volume-change", onVolumeChange);
     return () => window.removeEventListener("yt-volume-change", onVolumeChange);
   }, []);
+
+  useEffect(() => {
+    if (!playerRef.current) return;
+
+    const interval = setInterval(() => {
+      if (!isPlayingRef.current) return;
+
+      const time = playerRef.current.getCurrentTime?.();
+      const list = loadPlaylist();
+      const video = list[currentIndex];
+
+      if (video && typeof time === "number") {
+        saveVideoTime(video.id, time);
+      }
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [currentIndex]);
 
 
   return (
@@ -214,7 +241,9 @@ const Player = forwardRef(function Player({
       </div>
 
       <div className={styles.videoCtrls}>
-        <div className={styles.currentTitle}>Now Playing..</div>
+        <div className={styles.currentTitle}>
+          {currentTitle ? `Now Playing: ${currentTitle}` : "No video selected"}
+        </div>
         <div className={styles.navBtns}>
           <button className="btn" onClick={onPrev} disabled={isPrevDisabled}>Prev</button>
           <button className="btn" onClick={onNext} disabled={isNextDisabled}>Next</button>

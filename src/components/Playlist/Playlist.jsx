@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import styles from "./Playlist.module.scss";
-import { loadPlaylist } from "@/utils/storage";
+import { loadPlaylist, clearVideoTime } from "@/utils/storage";
 import { extractVideoId } from "@/utils/youtube";
 import PauseIcon from "./icons/PauseIcon";
 import PlayIcon from "./icons/PlayIcon";
@@ -23,10 +23,18 @@ export default function Playlist({
   }, []);
 
   async function addVideo() {
-    if (!url || isAdding) return;
+    if (isAdding) return;
+
+    if (!url.trim()) {
+      alert("Please paste a YouTube URL or ID");
+      return;
+    }
 
     const id = extractVideoId(url);
-    if (!id) return alert("Invalid URL");
+    if (!id) {
+      alert("Invalid YouTube URL or ID");
+      return;
+    }
 
     setIsAdding(true);
 
@@ -37,7 +45,7 @@ export default function Playlist({
     setList(updated);
     localStorage.setItem("yt_master", JSON.stringify(updated));
 
-    // 🔥 auto-play newly added video
+    // auto-play newly added video
     onTogglePlay(updated.length - 1);
 
     setUrl("");
@@ -45,13 +53,17 @@ export default function Playlist({
   }
 
   function handleDelete(index) {
+    const video = list[index];
+    if (!video) return;
     if (!confirm("Delete this video?")) return;
 
-    const updated = [...list];
-    updated.splice(index, 1);
-
+    // remove from playlist
+    const updated = list.filter((_, i) => i !== index);
     setList(updated);
     localStorage.setItem("yt_master", JSON.stringify(updated));
+
+    // clear saved playback time for this video
+    clearVideoTime(video.id);
 
     onDelete?.(index, updated.length);
   }
@@ -105,14 +117,12 @@ export default function Playlist({
   }
 
   function clearPlaylist() {
-    if (!confirm("Clear entire playlist?")) return;
-
-    localStorage.removeItem("yt_master");
-    setList([]);
-  }
-
-
-
+  if (!confirm("Clear entire playlist?")) return;
+  localStorage.removeItem("yt_master");
+  localStorage.removeItem("yt_video_time"); // 🔥 clear all saved times
+  setList([]);
+  onDelete?.(currentIndex, 0);
+}
 
   return (
     <div className={styles.playlistArea}>
