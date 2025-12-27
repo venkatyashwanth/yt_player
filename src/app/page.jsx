@@ -41,6 +41,28 @@ export default function Home() {
     });
   }, []);
 
+  const handleDelete = useCallback((deletedIndex, newLength) => {
+    setCurrentIndex((curr) => {
+      // nothing playing
+      if (curr < 0) return curr;
+
+      // deleted before current → shift left
+      if (deletedIndex < curr) {
+        return curr - 1;
+      }
+
+      // deleted currently playing
+      if (deletedIndex === curr) {
+        if (newLength === 0) return -1;          // playlist empty
+        if (curr < newLength) return curr;       // play next
+        return newLength - 1;                     // play previous
+      }
+
+      return curr;
+    });
+  }, []);
+
+
   // Keyboard-Shortcuts
   useEffect(() => {
     function handleKeyDown(e) {
@@ -138,6 +160,7 @@ export default function Home() {
           currentIndex={currentIndex}
           isPlaying={isPlaying}
           onTogglePlay={handleTogglePlay}
+          onDelete={handleDelete}
         />
       </div>
       {volumeToast !== null && (
