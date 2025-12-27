@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useRef, useCallback } from "react";
+import { useEffect, useRef, useCallback, forwardRef, useImperativeHandle } from "react";
 import styles from "./Player.module.scss";
 import { loadYouTubeAPI } from "@/utils/youtube";
 import { loadPlaylist } from "@/utils/storage";
 
-export default function Player({
+const Player = forwardRef(function Player({
   currentIndex,
   toggleSignal,
   onPlayingChange,
@@ -14,11 +14,40 @@ export default function Player({
   onEnded,
   isNextDisabled,
   isPrevDisabled,
-}) {
+}, ref) {
   const playerRef = useRef(null);
   const playlistRef = useRef([]);
   const isPlayerReadyRef = useRef(false);
   const isPlayingRef = useRef(false);
+
+  useImperativeHandle(ref, () => ({
+    seekBy(seconds) {
+      if (!playerRef.current) return;
+      const t = playerRef.current.getCurrentTime?.();
+      if (typeof t === "number") {
+        playerRef.current.seekTo(t + seconds, true);
+      }
+    },
+
+    toggleMute() {
+      if (!playerRef.current) return;
+      playerRef.current.isMuted()
+        ? playerRef.current.unMute()
+        : playerRef.current.mute();
+    },
+
+    enterFullscreen() {
+      const iframe = document.getElementById("player");
+      iframe?.requestFullscreen?.();
+    },
+
+    exitFullscreen() {
+      if (document.fullscreenElement) {
+        document.exitFullscreen();
+      }
+    },
+  }));
+
 
   const handleStateChange = useCallback(
     (event) => {
@@ -89,12 +118,11 @@ export default function Player({
     if (!playerRef.current) return;
     if (isPlayingRef.current) {
       playerRef.current.pauseVideo?.();
-    }else{
+    } else {
       playerRef.current.playVideo?.();
     }
-    
-  }, [toggleSignal]);
 
+  }, [toggleSignal]);
 
   return (
     <div className={styles.videoArea}>
@@ -111,4 +139,6 @@ export default function Player({
       </div>
     </div>
   );
-}
+})
+
+export default Player;

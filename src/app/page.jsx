@@ -4,18 +4,14 @@ import Header from "@/components/Header";
 import Player from "@/components/Player";
 import Playlist from "@/components/Playlist";
 import { loadPlaylist, loadIndex, saveIndex } from "@/utils/storage";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 export default function Home() {
   const [currentIndex, setCurrentIndex] = useState(() => loadIndex());
   const [isPlaying, setIsPlaying] = useState(false);
   const [toggleSignal, setToggleSignal] = useState(0);
-  const [playlistLength, setPlaylistLength] = useState(0);
-
-  useEffect(() => {
-    setPlaylistLength(loadPlaylist().length);
-  }, []);
-
+  const playerControlsRef = useRef(null);
+  const playlistLength = loadPlaylist().length;
   const isNextDisabled = playlistLength === 0 || currentIndex >= playlistLength - 1;
   const isPrevDisabled = playlistLength === 0 || currentIndex <= 0;
 
@@ -25,7 +21,7 @@ export default function Home() {
     }
   }, [currentIndex]);
 
-  const handleTogglePlay = useCallback      ((index) => {
+  const handleTogglePlay = useCallback((index) => {
     if (index === currentIndex) {
       setToggleSignal((n) => n + 1);
     } else {
@@ -50,18 +46,39 @@ export default function Home() {
       if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA") {
         return
       }
-      console.log(e.code);
+      const controls = playerControlsRef.current;
       switch (e.code) {
         case "Space":
           e.preventDefault(); // prevent page scroll
           setToggleSignal((n) => n + 1);
           break;
         case "ArrowRight":
-          handleNext();
+          if (e.shiftKey) {
+            controls?.seekBy(10);
+          } else {
+            handleNext();
+          }
           break;
 
         case "ArrowLeft":
-          handlePrev();
+          if (e.shiftKey) {
+            controls?.seekBy(-10);
+          } else {
+            handlePrev();
+          }
+          break;
+        case "KeyM":
+          console.log("sdf")
+          console.log(controls);
+          controls?.toggleMute();
+          break;
+
+        case "KeyF":
+          controls?.enterFullscreen();
+          break;
+
+        case "Escape":
+          controls?.exitFullscreen();
           break;
         default:
           break;
@@ -77,6 +94,7 @@ export default function Home() {
       <Header />
       <div className="container player-wrap">
         <Player
+          ref={playerControlsRef}
           currentIndex={currentIndex}
           toggleSignal={toggleSignal}
           onPlayingChange={setIsPlaying}
