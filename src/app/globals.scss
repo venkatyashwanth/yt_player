@@ -30,7 +30,8 @@ body {
   padding: 8px 12px;
   border-radius: 8px;
   cursor: pointer;
-  &:disabled{
+
+  &:disabled {
     background: gray;
     cursor: not-allowed;
   }
@@ -58,6 +59,20 @@ body {
   &:hover {
     transform: scale(1.2);
   }
+}
+
+.volume-toast {
+  position: fixed;
+  bottom: 100px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.75);
+  color: white;
+  padding: 8px 14px;
+  border-radius: 6px;
+  font-size: 14px;
+  pointer-events: none;
+  z-index: 9999;
 }
 
 /* ========== Desktop Enhancement ========== */

@@ -44,6 +44,7 @@ const Player = forwardRef(function Player({
 
       const next = Math.min(100, Math.max(0, current + delta));
       playerRef.current.setVolume(next);
+      return next;
     },
 
     enterFullscreen() {
