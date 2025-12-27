@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useRef, useCallback } from "react";
+import { useEffect, useRef, useCallback, forwardRef, useImperativeHandle } from "react";
 import styles from "./Player.module.scss";
 import { loadYouTubeAPI } from "@/utils/youtube";
 import { loadPlaylist } from "@/utils/storage";
 
-export default function Player({
+const Player = forwardRef(function Player({
   currentIndex,
   toggleSignal,
   onPlayingChange,
@@ -14,22 +14,55 @@ export default function Player({
   onEnded,
   isNextDisabled,
   isPrevDisabled,
-}) {
+}, ref) {
   const playerRef = useRef(null);
   const playlistRef = useRef([]);
   const isPlayerReadyRef = useRef(false);
+  const isPlayingRef = useRef(false);
+
+  useImperativeHandle(ref, () => ({
+    seekBy(seconds) {
+      if (!playerRef.current) return;
+      const t = playerRef.current.getCurrentTime?.();
+      if (typeof t === "number") {
+        playerRef.current.seekTo(t + seconds, true);
+      }
+    },
+
+    toggleMute() {
+      if (!playerRef.current) return;
+      playerRef.current.isMuted()
+        ? playerRef.current.unMute()
+        : playerRef.current.mute();
+    },
+
+    enterFullscreen() {
+      const iframe = document.getElementById("player");
+      iframe?.requestFullscreen?.();
+    },
+
+    exitFullscreen() {
+      if (document.fullscreenElement) {
+        document.exitFullscreen();
+      }
+    },
+  }));
+
 
   const handleStateChange = useCallback(
     (event) => {
       if (event.data === window.YT.PlayerState.PLAYING) {
+        isPlayingRef.current = true;
         onPlayingChange(true);
       }
 
       if (event.data === window.YT.PlayerState.PAUSED) {
+        isPlayingRef.current = false;
         onPlayingChange(false);
       }
 
       if (event.data === window.YT.PlayerState.ENDED) {
+        isPlayingRef.current = false;
         onPlayingChange(false);
         onEnded?.(); // 🔥 auto-play next
       }
@@ -83,19 +116,13 @@ export default function Player({
   // Toggle play / pause
   useEffect(() => {
     if (!playerRef.current) return;
-
-    const state = playerRef.current.getPlayerState?.();
-
-    // If currently playing → pause
-    if (state === window.YT.PlayerState.PLAYING) {
-      playerRef.current.pauseVideo();
-      return;
+    if (isPlayingRef.current) {
+      playerRef.current.pauseVideo?.();
+    } else {
+      playerRef.current.playVideo?.();
     }
 
-    // Otherwise → force play
-    playerRef.current.playVideo();
   }, [toggleSignal]);
-
 
   return (
     <div className={styles.videoArea}>
@@ -112,4 +139,6 @@ export default function Player({
       </div>
     </div>
   );
-}
+})
+
+export default Player;
