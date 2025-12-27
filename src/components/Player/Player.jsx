@@ -19,6 +19,7 @@ const Player = forwardRef(function Player({
   const playlistRef = useRef([]);
   const isPlayerReadyRef = useRef(false);
   const isPlayingRef = useRef(false);
+  const videoBoxRef = useRef(null);
 
   useImperativeHandle(ref, () => ({
     seekBy(seconds) {
@@ -135,9 +136,62 @@ const Player = forwardRef(function Player({
 
   }, [toggleSignal]);
 
+  // MouseWheel VolumeControl
+  useEffect(() => {
+    const el = videoBoxRef.current;
+    if (!el) return;
+
+    let hideTimer;
+    function onWheel(e) {
+      clearTimeout(hideTimer);
+      e.preventDefault();
+
+      if (!playerRef.current) return;
+
+      const delta = e.deltaY < 0 ? 5 : -5;
+      const current = playerRef.current.getVolume?.();
+      if (typeof current !== "number") return;
+
+      const next = Math.min(100, Math.max(0, current + delta));
+      playerRef.current.setVolume(next);
+      window.dispatchEvent(
+        new CustomEvent("yt-volume-change", { detail: next })
+      );
+    }
+
+    el.addEventListener("wheel", onWheel, { passive: false, capture: true });
+
+    return () => {
+      el.removeEventListener("wheel", onWheel);
+    };
+  }, []);
+
+  useEffect(() => {
+    function onVolumeChange(e) {
+      const el = document.querySelector(`.${styles.volumeValue}`);
+      if (!el) return;
+
+      el.textContent = `${e.detail}%`;
+
+      // subtle pop animation
+      el.style.transform = "scale(1.15)";
+      requestAnimationFrame(() => {
+        el.style.transform = "scale(1)";
+      });
+    }
+
+    window.addEventListener("yt-volume-change", onVolumeChange);
+    return () => window.removeEventListener("yt-volume-change", onVolumeChange);
+  }, []);
+
+
   return (
     <div className={styles.videoArea}>
-      <div className={styles.videoBox}>
+      <div className={styles.videoBox} ref={videoBoxRef}>
+        <div className={styles.wheelOverlay}>
+          <span className={styles.volumeHint}>🔊 Volume control</span>
+          <span className={styles.volumeValue}></span>
+        </div>
         <div id="player" className={styles.player} />
       </div>
 

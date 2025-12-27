@@ -108,7 +108,17 @@ export default function Home() {
     const t = setTimeout(() => setVolumeToast(null), 1000);
     return () => clearTimeout(t);
   }, [volumeToast])
-  // Test Change
+
+  // Listen for wheel volume events
+  useEffect(() => {
+    function onVolumeChange(e) {
+      setVolumeToast(e.detail);
+    }
+
+    window.addEventListener("yt-volume-change", onVolumeChange);
+    return () =>
+      window.removeEventListener("yt-volume-change", onVolumeChange);
+  }, []);
   return (
     <>
       <Header />
