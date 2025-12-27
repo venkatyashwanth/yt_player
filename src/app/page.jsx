@@ -67,6 +67,16 @@ export default function Home() {
             handlePrev();
           }
           break;
+        case "ArrowUp":
+          e.preventDefault(); // avoid page scroll
+          controls?.changeVolume(5);
+          break;
+
+        case "ArrowDown":
+          e.preventDefault();
+          console.log("first")
+          controls?.changeVolume(-5);
+          break;
         case "KeyM":
           console.log("sdf")
           console.log(controls);
