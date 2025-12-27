@@ -54,14 +54,12 @@ export default function Playlist({
         {list.map((video, i) => (
           <div key={video.id} className={styles.playlistItem}>
             <div className={styles.num}>{i + 1}</div>
-
             <div className={styles.thumb}>
               <img
                 src={`https://img.youtube.com/vi/${video.id}/hqdefault.jpg`}
                 alt={video.title}
               />
             </div>
-
             <div className={styles.info}>
               <div className={styles.title}>{video.title}</div>
               <div className={styles.meta}>{video.id}</div>
@@ -73,14 +71,8 @@ export default function Playlist({
                 onClick={(e) => {
                   e.stopPropagation();
                   onTogglePlay(i);
-                  // console.log(isPlaying)
                 }}
               >
-                {/* {i === currentIndex && isPlaying ? (
-                  <PauseIcon />
-                ) : (
-                  <PlayIcon />
-                )} */}
                 {i === currentIndex && isPlaying ? (
                   <PauseIcon />
                 ) : (
@@ -110,7 +102,7 @@ export default function Playlist({
           onChange={(e) => setUrl(e.target.value)}
           placeholder="Paste Youtube URL or ID"
           onKeyDown={(e) => {
-            if(e.key === "Enter"){
+            if (e.key === "Enter") {
               e.preventDefault();
               addVideo();
             }
@@ -119,6 +111,12 @@ export default function Playlist({
         <button className="btn" onClick={addVideo} disabled={isAdding}>
           {isAdding ? "Adding..." : "Add"}
         </button>
+      </div>
+      <div className={styles.footerActions}>
+        <button className="btn">Export JSON</button>
+        <button className="btn">Import JSON</button>
+        <input type="file" id="importfile" accept=".json" className={styles.fileInput} />
+        <button className="btn" style={{background: "#666"}}>Clear</button>
       </div>
     </div>
   );
