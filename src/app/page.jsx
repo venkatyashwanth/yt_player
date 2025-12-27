@@ -4,7 +4,7 @@ import Header from "@/components/Header";
 import Player from "@/components/Player";
 import Playlist from "@/components/Playlist";
 import { loadPlaylist, loadIndex, saveIndex } from "@/utils/storage";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 export default function Home() {
   const [currentIndex, setCurrentIndex] = useState(() => loadIndex());
@@ -25,24 +25,52 @@ export default function Home() {
     }
   }, [currentIndex]);
 
-  function handleTogglePlay(index) {
+  const handleTogglePlay = useCallback      ((index) => {
     if (index === currentIndex) {
       setToggleSignal((n) => n + 1);
     } else {
       setCurrentIndex(index);
     }
-  }
+  }, [currentIndex]);
 
-  function handlePrev() {
+  const handlePrev = useCallback(() => {
     setCurrentIndex((i) => (i > 0 ? i - 1 : i));
-  }
+  }, []);
 
-  function handleNext() {
+  const handleNext = useCallback(() => {
     setCurrentIndex((i) => {
       const list = loadPlaylist();
       return i < list.length - 1 ? i + 1 : i;
     });
-  }
+  }, []);
+
+  // Keyboard-Shortcuts
+  useEffect(() => {
+    function handleKeyDown(e) {
+      if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA") {
+        return
+      }
+      console.log(e.code);
+      switch (e.code) {
+        case "Space":
+          e.preventDefault(); // prevent page scroll
+          setToggleSignal((n) => n + 1);
+          break;
+        case "ArrowRight":
+          handleNext();
+          break;
+
+        case "ArrowLeft":
+          handlePrev();
+          break;
+        default:
+          break;
+      }
+    }
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [handleNext, handlePrev])
 
   return (
     <>
