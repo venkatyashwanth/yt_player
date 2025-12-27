@@ -7,20 +7,45 @@ import { loadPlaylist, loadIndex, saveIndex } from "@/utils/storage";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 export default function Home() {
-  const [currentIndex, setCurrentIndex] = useState(() => loadIndex());
+  const [currentIndex, setCurrentIndex] = useState(-1);
+  const [currentTitle, setCurrentTitle] = useState("");
   const [isPlaying, setIsPlaying] = useState(false);
   const [toggleSignal, setToggleSignal] = useState(0);
   const [volumeToast, setVolumeToast] = useState(null);
+  const [playlistLength, setPlaylistLength] = useState(0);
   const playerControlsRef = useRef(null);
-  const playlistLength = loadPlaylist().length;
   const isNextDisabled = playlistLength === 0 || currentIndex >= playlistLength - 1;
-  const isPrevDisabled = playlistLength === 0 || currentIndex <= 0;
+  let isPrevDisabled = currentIndex <= 0;
+
+  useEffect(() => {
+    const total = loadPlaylist().length;
+    setPlaylistLength(total);
+  }, []);
+
+  useEffect(() => {
+    const saved = loadIndex();
+    if (typeof saved === "number" && saved >= 0) {
+      setCurrentIndex(saved);
+    }
+  }, [])
 
   useEffect(() => {
     if (currentIndex >= 0) {
       saveIndex(currentIndex);
     }
   }, [currentIndex]);
+
+  useEffect(() => {
+    if (currentIndex < 0) {
+      setCurrentTitle("");
+      return;
+    }
+
+    const list = loadPlaylist();
+    const video = list[currentIndex];
+    setCurrentTitle(video?.title || "");
+  }, [currentIndex]);
+
 
   const handleTogglePlay = useCallback((index) => {
     if (index === currentIndex) {
@@ -53,15 +78,18 @@ export default function Home() {
 
       // deleted currently playing
       if (deletedIndex === curr) {
-        if (newLength === 0) return -1;          // playlist empty
-        if (curr < newLength) return curr;       // play next
-        return newLength - 1;                     // play previous
+        if (newLength === 0) {
+          // 🔥 STOP when playlist becomes empty
+          playerControlsRef.current?.stop?.();
+          return -1;
+        }
+        if (curr < newLength) return curr;   // play next
+        return newLength - 1;                // play previous
       }
 
       return curr;
     });
   }, []);
-
 
   // Keyboard-Shortcuts
   useEffect(() => {
@@ -91,7 +119,7 @@ export default function Home() {
           }
           break;
         case "ArrowUp": {
-          e.preventDefault(); // avoid page scroll
+          e.preventDefault();
           const v = controls?.changeVolume(5);
           if (typeof v === "number") setVolumeToast(v);
           break;
@@ -148,6 +176,7 @@ export default function Home() {
         <Player
           ref={playerControlsRef}
           currentIndex={currentIndex}
+          currentTitle={currentTitle}
           toggleSignal={toggleSignal}
           onPlayingChange={setIsPlaying}
           onPrev={handlePrev}
