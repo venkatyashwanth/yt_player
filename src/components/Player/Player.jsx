@@ -3,7 +3,7 @@
 import { useEffect, useRef, useCallback, forwardRef, useImperativeHandle, useState } from "react";
 import styles from "./Player.module.scss";
 import { loadYouTubeAPI } from "@/utils/youtube";
-import { loadPlaylist, loadVolume, saveVolume, loadVideoTime, saveVideoTime } from "@/utils/storage";
+import { loadPlaylist, loadVolume, saveVolume, loadVideoTime, saveVideoTime, clearVideoTime } from "@/utils/storage";
 
 const Player = forwardRef(function Player({
   currentIndex,
@@ -22,7 +22,7 @@ const Player = forwardRef(function Player({
   const isPlayerReadyRef = useRef(false);
   const isPlayingRef = useRef(false);
   const videoBoxRef = useRef(null);
-  const pendingSeekRef = useRef(null);
+  // const pendingSeekRef = useRef(null);
 
   useImperativeHandle(ref, () => ({
     seekBy(seconds) {
@@ -85,11 +85,12 @@ const Player = forwardRef(function Player({
         event.data === window.YT.PlayerState.CUED ||
         event.data === window.YT.PlayerState.PLAYING
       ) {
-        if (pendingSeekRef.current != null) {
-          playerRef.current.seekTo(pendingSeekRef.current, true);
-          pendingSeekRef.current = null;
-        }
+        // if (pendingSeekRef.current != null) {
+        //   playerRef.current.seekTo(pendingSeekRef.current, true);
+        //   pendingSeekRef.current = null;
+        // }
       }
+
 
       if (event.data === window.YT.PlayerState.PLAYING) {
         isPlayingRef.current = true;
@@ -104,6 +105,11 @@ const Player = forwardRef(function Player({
       if (event.data === window.YT.PlayerState.ENDED) {
         isPlayingRef.current = false;
         onPlayingChange(false);
+        const list = loadPlaylist();
+        const video = list[currentIndex];
+        if (video) {
+          clearVideoTime(video.id);
+        }
         onEnded?.();
       }
     },
@@ -138,16 +144,20 @@ const Player = forwardRef(function Player({
   useEffect(() => {
     if (!isPlayerReadyRef.current) return;
     if (currentIndex < 0) return;
-    playlistRef.current = loadPlaylist();
-    const video = playlistRef.current[currentIndex];
+
+    const list = loadPlaylist();
+    const video = list[currentIndex];
     if (!video) return;
-    if (typeof playerRef.current.loadVideoById !== "function") return;
+
     const savedTime = loadVideoTime(video.id);
-    pendingSeekRef.current = savedTime > 0 ? savedTime : null;
-    playerRef.current.loadVideoById({
-      videoId: video.id,
-      startSeconds: savedTime,
-    });
+
+    // 🚫 ignore resume if no valid saved time
+    // pendingSeekRef.current =
+    //   typeof savedTime === "number" && savedTime > 1
+    //     ? savedTime
+    //     : null;
+
+    playerRef.current.loadVideoById(video.id);
   }, [playerReady, currentIndex]);
 
   // Toggle play / pause
@@ -217,6 +227,13 @@ const Player = forwardRef(function Player({
       const video = list[currentIndex];
 
       if (video && typeof time === "number") {
+        const duration = playerRef.current.getDuration?.();
+
+        // 🔥 don't save if near end (last 2 seconds)
+        if (typeof duration === "number" && time >= duration - 2) {
+          return;
+        }
+
         saveVideoTime(video.id, time);
       }
     }, 1000);
